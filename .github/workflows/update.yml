@@ -13,9 +13,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Clone ACL4SSR (dev branch)
+      - name: Clone ACL4SSR
         run: |
-          git clone --depth=1 --branch dev https://github.com/ACL4SSR/ACL4SSR.git
+          git clone --depth=1 https://github.com/ACL4SSR/ACL4SSR.git
 
       - name: Get latest ACL4SSR commit hash
         id: acl
