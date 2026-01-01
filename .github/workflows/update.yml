@@ -49,9 +49,16 @@ jobs:
 
       - name: Install mihomo
         run: |
-          wget https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64
-          chmod +x mihomo-linux-amd64
-          sudo mv mihomo-linux-amd64 /usr/local/bin/mihomo
+          curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+          | grep "browser_download_url.*linux-amd64" \
+          | cut -d '"' -f 4 \
+          | xargs wget -O mihomo
+          chmod +x mihomo
+          sudo mv mihomo /usr/local/bin/mihomo
+
+      - name: Check mihomo version
+        run: |
+          mihomo version || echo "mihomo not found or failed"
 
       - name: Convert .list to .mrs
         run: |
@@ -72,7 +79,7 @@ jobs:
           ts=$(date +'%Y%m%d-%H%M')
           echo "tag=v$ts" >> $GITHUB_OUTPUT
 
-      - name: Create Release (upload each .mrs)
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
