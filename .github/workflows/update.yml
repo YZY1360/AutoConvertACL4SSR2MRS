@@ -103,6 +103,7 @@ jobs:
             mrs/*.mrs
             last_hash.txt
         env:
+          # 🔥 使用 GH_PAT 创建 Release（关键）
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Commit and push hash
@@ -113,6 +114,6 @@ jobs:
           git add last_hash.txt
           git commit -m "Update hash" || echo "No changes to commit"
 
-          # 使用 GH_PAT 进行 push（关键修复）
+          # 🔥 使用 GH_PAT 进行 push（关键修复）
           git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
           git push
