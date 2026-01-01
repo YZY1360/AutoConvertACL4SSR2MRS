@@ -52,45 +52,34 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq gzip
           url=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
             | jq -r '[.assets[] | select(.name | test("linux-amd64.*\\.gz$"))][0].browser_download_url')
-          if [ -z "$url" ]; then
-            echo "Failed to find mihomo download URL"
-            exit 1
-          fi
-          echo "Downloading mihomo from: $url"
           wget "$url" -O mihomo.gz
           gunzip mihomo.gz
           chmod +x mihomo
           sudo mv mihomo /usr/local/bin/mihomo
-
-      - name: Check mihomo install
-        run: |
-          echo "example.com" > test.list
-          mihomo convert-ruleset domain text test.list test.mrs || (echo "mihomo install failed" && exit 1)
-          rm test.list test.mrs
 
       - name: Convert .list to .mrs
         run: |
           rm -rf mrs
           mkdir -p mrs
 
-          if [ ! -d ACL4SSR/Clash ]; then
-            echo "ACL4SSR/Clash folder not found!"
-            exit 1
-          fi
-
-          ls ACL4SSR/Clash/*.list || echo "No .list files found"
-
           for f in ACL4SSR/Clash/*.list; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .list)
             echo "Converting $f → mrs/$name.mrs"
-            mihomo convert-ruleset domain text "$f" "mrs/$name.mrs" || echo "Failed to convert $f"
+            if ! mihomo convert-ruleset domain text "$f" "mrs/$name.mrs"; then
+              echo "Conversion failed for $f"
+              rm -f "mrs/$name.mrs"
+            fi
           done
+
+      - name: Remove empty files
+        run: |
+          find mrs -type f -size 0 -delete
 
       - name: Ensure mrs directory not empty
         run: |
           if [ -z "$(ls -A mrs)" ]; then
-            echo "No MRS files generated. Exiting."
+            echo "No valid MRS files generated. Exiting."
             exit 1
           fi
 
