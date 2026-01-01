@@ -2,7 +2,7 @@ name: Update MRS Rules and Release
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # 每天自动检查
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -73,14 +73,14 @@ jobs:
           rm -rf mrs
           mkdir -p mrs
 
-          if [ ! -d ACL4SSR/Clash/Ruleset ]; then
-            echo "ACL4SSR/Clash/Ruleset folder not found!"
+          if [ ! -d ACL4SSR/Clash ]; then
+            echo "ACL4SSR/Clash folder not found!"
             exit 1
           fi
 
-          ls ACL4SSR/Clash/Ruleset/*.list || echo "No .list files found"
+          ls ACL4SSR/Clash/*.list || echo "No .list files found"
 
-          for f in ACL4SSR/Clash/Ruleset/*.list; do
+          for f in ACL4SSR/Clash/*.list; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .list)
             echo "Converting $f → mrs/$name.mrs"
