@@ -2,7 +2,7 @@ name: Update MRS Rules and Release
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # 每天自动检查
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -64,7 +64,9 @@ jobs:
 
       - name: Check mihomo install
         run: |
-          mihomo convert-ruleset --help || (echo "mihomo install failed" && exit 1)
+          echo "example.com" > test.list
+          mihomo convert-ruleset domain text test.list test.mrs || (echo "mihomo install failed" && exit 1)
+          rm test.list test.mrs
 
       - name: Convert .list to .mrs
         run: |
