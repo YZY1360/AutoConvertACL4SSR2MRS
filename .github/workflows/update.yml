@@ -26,9 +26,8 @@ jobs:
       - name: Get last hash from latest Release
         id: last
         run: |
-          last_tag=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
-          last_hash=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.body' | grep "ACL4SSR hash:" | awk '{print $3}')
-          echo "tag=$last_tag" >> $GITHUB_OUTPUT
+          api="https://api.github.com/repos/${{ github.repository }}/releases/latest"
+          last_hash=$(curl -s $api | jq -r '.body' | grep "ACL4SSR hash:" | awk '{print $3}')
           echo "hash=$last_hash" >> $GITHUB_OUTPUT
 
       - name: Compare hashes
@@ -56,18 +55,21 @@ jobs:
           chmod +x mihomo
           sudo mv mihomo /usr/local/bin/mihomo
 
-      - name: Convert .list to .mrs
+      - name: Convert .list to .mrs (recursive)
         run: |
           rm -rf mrs
           mkdir -p mrs
 
-          for f in ACL4SSR/Clash/*.list; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f" .list)
-            echo "Converting $f → mrs/$name.mrs"
-            if ! mihomo convert-ruleset domain text "$f" "mrs/$name.mrs"; then
+          find ACL4SSR/Clash -type f -name "*.list" | while read f; do
+            rel_path="${f#ACL4SSR/Clash/}"
+            out_path="mrs/${rel_path%.list}.mrs"
+            mkdir -p "$(dirname "$out_path")"
+
+            echo "Converting $f → $out_path"
+
+            if ! mihomo convert-ruleset domain text "$f" "$out_path"; then
               echo "Conversion failed for $f"
-              rm -f "mrs/$name.mrs"
+              rm -f "$out_path"
             fi
           done
 
@@ -97,6 +99,6 @@ jobs:
             Auto-generated MRS rules from ACL4SSR.
             ACL4SSR hash: ${{ steps.acl.outputs.hash }}
           files: |
-            mrs/*.mrs
+            mrs/**/*.mrs
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
