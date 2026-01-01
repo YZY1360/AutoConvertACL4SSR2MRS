@@ -23,19 +23,18 @@ jobs:
           cd ACL4SSR
           echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Check last built hash
-        id: check
+      - name: Get last hash from latest Release
+        id: last
         run: |
-          if [ -f last_hash.txt ]; then
-            echo "prev=$(cat last_hash.txt)" >> $GITHUB_OUTPUT
-          else
-            echo "prev=none" >> $GITHUB_OUTPUT
-          fi
+          last_tag=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+          last_hash=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.body' | grep "ACL4SSR hash:" | awk '{print $3}')
+          echo "tag=$last_tag" >> $GITHUB_OUTPUT
+          echo "hash=$last_hash" >> $GITHUB_OUTPUT
 
       - name: Compare hashes
         id: compare
         run: |
-          if [ "${{ steps.acl.outputs.hash }}" = "${{ steps.check.outputs.prev }}" ]; then
+          if [ "${{ steps.acl.outputs.hash }}" = "${{ steps.last.outputs.hash }}" ]; then
             echo "changed=no" >> $GITHUB_OUTPUT
           else
             echo "changed=yes" >> $GITHUB_OUTPUT
@@ -83,10 +82,6 @@ jobs:
             exit 1
           fi
 
-      - name: Save new hash
-        run: |
-          echo "${{ steps.acl.outputs.hash }}" > last_hash.txt
-
       - name: Generate new tag
         id: tag
         run: |
@@ -98,22 +93,10 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "MRS Rules ${{ steps.tag.outputs.tag }}"
-          body: "Auto-generated MRS rules from ACL4SSR."
+          body: |
+            Auto-generated MRS rules from ACL4SSR.
+            ACL4SSR hash: ${{ steps.acl.outputs.hash }}
           files: |
             mrs/*.mrs
-            last_hash.txt
         env:
-          # 🔥 使用 GH_PAT 创建 Release（关键）
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-
-      - name: Commit and push hash
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add last_hash.txt
-          git commit -m "Update hash" || echo "No changes to commit"
-
-          # 🔥 使用 GH_PAT 进行 push（关键修复）
-          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
-          git push
