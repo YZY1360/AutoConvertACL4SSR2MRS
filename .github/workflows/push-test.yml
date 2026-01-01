@@ -1,14 +1,29 @@
-- name: Commit and push hash
-  run: |
-    git config user.name "github-actions"
-    git config user.email "github-actions@github.com"
+name: Push Test
+on: workflow_dispatch
 
-    git add last_hash.txt
-    git commit -m "Update hash" || echo "No changes to commit"
+jobs:
+  test:
+    runs-on: ubuntu-latest
 
-    # 🔥 关键修复：禁用 GitHub Actions 默认凭据
-    git config --global --unset credential.helper
+    steps:
+      - uses: actions/checkout@v4
 
-    # 🔥 使用 GH_PAT 进行 push
-    git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
-    git push
+      - name: Create test file
+        run: |
+          echo "push test $(date)" > push_test.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add push_test.txt
+          git commit -m "push test" || echo "No changes"
+
+          # 🔥 关键：禁用默认凭据（否则永远使用 github-actions[bot]）
+          git config --global --unset credential.helper || true
+
+          # 🔥 关键：强制使用 GH_PAT
+          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
+
+          git push
