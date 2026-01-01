@@ -2,7 +2,7 @@ name: Update MRS Rules and Release
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # 每天自动检查
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -49,12 +49,12 @@ jobs:
 
       - name: Install mihomo
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
+          sudo apt-get update && sudo apt-get install -y jq gzip
           url=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
-            | jq -r '.assets[] | select(.name | test("linux-amd64$")) | .browser_download_url')
+            | jq -r '.assets[] | select(.name | test("linux-amd64.gz$")) | .browser_download_url')
           echo "Downloading mihomo from: $url"
-          wget "$url" -O mihomo
-          file mihomo
+          wget "$url" -O mihomo.gz
+          gunzip mihomo.gz
           chmod +x mihomo
           sudo mv mihomo /usr/local/bin/mihomo
 
