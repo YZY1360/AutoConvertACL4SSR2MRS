@@ -1,0 +1,93 @@
+name: Update MRS Rules and Release
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # 每天自动检查
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clone ACL4SSR
+        run: |
+          git clone --depth=1 https://github.com/ACL4SSR/ACL4SSR.git
+
+      - name: Get latest ACL4SSR commit hash
+        id: acl
+        run: |
+          cd ACL4SSR
+          echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Check last built hash
+        id: check
+        run: |
+          if [ -f last_hash.txt ]; then
+            echo "prev=$(cat last_hash.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "prev=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compare hashes
+        id: compare
+        run: |
+          if [ "${{ steps.acl.outputs.hash }}" = "${{ steps.check.outputs.prev }}" ]; then
+            echo "changed=no" >> $GITHUB_OUTPUT
+          else
+            echo "changed=yes" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop if no update
+        if: steps.compare.outputs.changed == 'no'
+        run: |
+          echo "No update from ACL4SSR. Skip."
+          exit 0
+
+      - name: Install mihomo
+        run: |
+          wget https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64
+          chmod +x mihomo-linux-amd64
+          sudo mv mihomo-linux-amd64 /usr/local/bin/mihomo
+
+      - name: Convert .list to .mrs
+        run: |
+          rm -rf mrs
+          mkdir -p mrs
+          for f in ACL4SSR/Clash/*.list; do
+            name=$(basename "$f" .list)
+            mihomo convert-ruleset domain text "$f" "mrs/$name.mrs"
+          done
+
+      - name: Save new hash
+        run: |
+          echo "${{ steps.acl.outputs.hash }}" > last_hash.txt
+
+      - name: Generate new tag
+        id: tag
+        run: |
+          ts=$(date +'%Y%m%d-%H%M')
+          echo "tag=v$ts" >> $GITHUB_OUTPUT
+
+      - name: Create Release (upload each .mrs)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "MRS Rules ${{ steps.tag.outputs.tag }}"
+          body: "Auto-generated MRS rules from ACL4SSR."
+          files: |
+            mrs/*.mrs
+            last_hash.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit and push hash
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add last_hash.txt
+          git commit -m "Update hash"
+          git push
