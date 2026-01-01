@@ -20,7 +20,7 @@ jobs:
           git add push_test.txt
           git commit -m "push test" || echo "No changes"
 
-          # 🔥 关键：禁用默认凭据（否则永远使用 github-actions[bot]）
+          # 🔥 关键：禁用默认凭据
           git config --global --unset credential.helper || true
 
           # 🔥 关键：强制使用 GH_PAT
