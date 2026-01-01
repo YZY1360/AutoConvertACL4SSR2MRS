@@ -87,6 +87,13 @@ jobs:
             mihomo convert-ruleset domain text "$f" "mrs/$name.mrs" || echo "Failed to convert $f"
           done
 
+      - name: Ensure mrs directory not empty
+        run: |
+          if [ -z "$(ls -A mrs)" ]; then
+            echo "No MRS files generated. Exiting."
+            exit 1
+          fi
+
       - name: Save new hash
         run: |
           echo "${{ steps.acl.outputs.hash }}" > last_hash.txt
