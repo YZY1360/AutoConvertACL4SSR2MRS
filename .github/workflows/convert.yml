@@ -1,0 +1,80 @@
+name: Convert ACL4SSR to MRS
+
+on:
+  schedule:
+    # Run daily at 6:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Checkout ACL4SSR
+        uses: actions/checkout@v4
+        with:
+          repository: ACL4SSR/ACL4SSR
+          path: acl4ssr
+          fetch-depth: 1
+
+      - name: Check if ACL4SSR has updates
+        id: check
+        run: |
+          cd acl4ssr
+          CURRENT_HASH=$(git rev-parse HEAD)
+          echo "current_hash=$CURRENT_HASH" >> $GITHUB_OUTPUT
+
+          if [ -f ../repo/last_hash.txt ]; then
+            LAST_HASH=$(cat ../repo/last_hash.txt)
+            echo "last_hash=$LAST_HASH"
+            if [ "$CURRENT_HASH" = "$LAST_HASH" ]; then
+              echo "No changes in ACL4SSR since last run."
+              echo "changed=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+          echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Download mihomo
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          MIHOMO_VER="v1.19.28"
+          curl -L -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VER}/mihomo-linux-amd64-${MIHOMO_VER}.gz"
+          gunzip mihomo.gz
+          chmod +x mihomo
+
+      - name: Convert rules to MRS
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          rm -rf repo/mrs
+          python3 repo/convert.py acl4ssr/Clash repo/mrs ./mihomo
+
+      - name: Update last_hash
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          echo "${{ steps.check.outputs.current_hash }}" > repo/last_hash.txt
+
+      - name: Commit and push
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          cd repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Disable default credential helper, use GH_PAT
+          git config --global --unset credential.helper || true
+          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
+
+          git add -A
+          git diff --cached --quiet || (
+            git commit -m "auto: update MRS rules [ACL4SSR ${{ steps.check.outputs.current_hash }}]"
+            git push
+          )
