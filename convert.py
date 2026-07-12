@@ -126,7 +126,7 @@ def main():
             if domain_rules:
                 domain_txt = tmp / f"{name}_domain.txt"
                 domain_txt.write_text('\n'.join(domain_rules) + '\n', encoding='utf-8')
-                domain_mrs = out_subdir / f"{name}.mrs"
+                domain_mrs = out_subdir / f"{name}_domain.mrs"
                 if convert_to_mrs(mihomo_bin, 'domain', str(domain_txt), str(domain_mrs)):
                     stats['domain_mrs'] += 1
                     print(f"  -> {domain_mrs.relative_to(output_dir.parent) if output_dir.parent != Path('.') else domain_mrs.name} ({len(domain_rules)} domain rules)")
@@ -137,7 +137,7 @@ def main():
             if ip_rules:
                 ip_txt = tmp / f"{name}_ip.txt"
                 ip_txt.write_text('\n'.join(ip_rules) + '\n', encoding='utf-8')
-                ip_mrs = out_subdir / f"{name}_ip.mrs"
+                ip_mrs = out_subdir / f"{name}_ipcidr.mrs"
                 if convert_to_mrs(mihomo_bin, 'ipcidr', str(ip_txt), str(ip_mrs)):
                     stats['ip_mrs'] += 1
                     print(f"  -> {ip_mrs.relative_to(output_dir.parent) if output_dir.parent != Path('.') else ip_mrs.name} ({len(ip_rules)} IP rules)")
