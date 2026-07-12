@@ -1,8 +1,6 @@
 name: Convert ACL4SSR to MRS
 
 on:
-  repository_dispatch:
-    types: [acl4ssr-update]
   schedule:
     # Fallback: check every 4 hours
     - cron: '0 */4 * * *'
