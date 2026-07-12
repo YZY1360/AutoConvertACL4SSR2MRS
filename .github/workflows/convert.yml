@@ -2,8 +2,8 @@ name: Convert ACL4SSR to MRS
 
 on:
   schedule:
-    # Fallback: check every 4 hours
-    - cron: '0 */4 * * *'
+    # Check for ACL4SSR updates daily
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
