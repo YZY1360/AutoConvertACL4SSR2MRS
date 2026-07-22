@@ -1,9 +1,7 @@
 name: Convert ACL4SSR to MRS
 
 on:
-  schedule:
-    # Check for ACL4SSR updates daily
-    - cron: '0 6 * * *'
+  # schedule disabled — manual trigger only
   workflow_dispatch:
 
 jobs:
